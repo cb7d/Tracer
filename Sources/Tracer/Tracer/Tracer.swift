@@ -22,29 +22,29 @@ class Tracer {
         _ = paths.map{
             let tokens = TokenGen($0).tokens()
             
-//            if let tks = ObjCInterfaceConsumer.run(tokens) {
-//
-//                if tks.count > 0 {
-//                    print("Found Interfaces:")
-//                    print("=====================")
-//                    print(tks)
-//                }
-//            }
-            
-            if let tks = ObjCFuncDefineConsumer.run(tokens) {
+            if let tks = ObjCInterfaceConsumer.run(tokens) {
 
                 if tks.count > 0 {
-                    print("Found Define:")
+                    print("Found Interfaces:")
                     print("=====================")
                     print(tks)
-                    
-                    tks.forEach{
-                        if $0.invokes.count > 0 {
-                            
-                        }
-                    }
                 }
             }
+            
+//            if let tks = ObjCFuncDefineConsumer.run(tokens) {
+//
+//                if tks.count > 0 {
+//                    print("Found Define:")
+//                    print("=====================")
+//                    print(tks)
+//                    
+//                    tks.forEach{
+//                        if $0.invokes.count > 0 {
+//                            
+//                        }
+//                    }
+//                }
+//            }
             
             
 //            if let nodes = ObjCFuncDeclConsumer.run(tokens) {
