@@ -44,6 +44,7 @@ import Foundation
 /// - caret: ^
 /// - dot: .
 /// - rightArrow: ->
+/// - `super`: super
 /// - `static`: static
 /// - `return`: return
 enum TokenType {
@@ -81,6 +82,7 @@ enum TokenType {
     case caret
     case dot
     case rightArrow
+    case `super`
     case `static`
     case `return`
 }

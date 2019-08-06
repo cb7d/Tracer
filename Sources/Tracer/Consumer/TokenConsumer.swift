@@ -59,6 +59,13 @@ var toString: (Token?) -> String {
     }
 }
 
+/// token转为字符串
+var filterNameToString: ([Token]) -> [String] {
+    return { tokens in
+        return tokens.filter{return $0.type == .name}.map{return $0.detail}
+    }
+}
+
 /// 将token序列的字符拼接为字符串
 func joinedBy(separator: String) -> ([Token]) -> String {
     return { tokens in
@@ -87,6 +94,20 @@ func anyTokens(inside lc:TokenConsumer<Token>, rc: TokenConsumer<Token>) -> Toke
     return anyTokens(enclosedBy: lc, rc: rc).map {
         Array($0.dropFirst().dropLast())
     }
+}
+
+var anyEnclosedTokens: TokenConsumer<[Token]> {
+    return anyTokens(enclosedBy: t_openBrace, rc: t_closeBrace)
+        <|> anyTokens(enclosedBy: t_openBracket, rc: t_closeBracket)
+        <|> anyTokens(enclosedBy: t_openParen, rc: t_closeParen)
+        <|> anyTokens(enclosedBy: t_less, rc: t_greater)
+}
+
+func anyOpenTokens(until p: TokenConsumer<Token>) -> TokenConsumer<[Token]> {
+    return {$0.flatMap{$0}}
+        <^> (p.opposite()
+        *> (anyEnclosedTokens
+        <|> anyToken.map {[$0]})).many()
 }
 
 func singleToken(_ type:TokenType) -> TokenConsumer<Token> {
@@ -192,6 +213,26 @@ extension Consumer {
                     rest = left
                 case .failure(_):
                     return .success((results.compactMap{ $0 }, rest))
+                }
+            }
+        })
+    }
+    
+    func manyLeast1() -> Consumer<[Result], Input> {
+        return Consumer<[Result], Input>(consume: { (input) -> ConsumeResult<([Result], Input)> in
+            var results = [Result]()
+            var rest = input
+            while true {
+                switch self.consume(rest) {
+                case .success(let (result, left)):
+                    results.append(result)
+                    rest = left
+                case .failure(let error):
+                    if results.count == 0 {
+                        return .failure(error)
+                    }else {
+                        return .success((results.compactMap{ $0 }, rest))
+                    }
                 }
             }
         })

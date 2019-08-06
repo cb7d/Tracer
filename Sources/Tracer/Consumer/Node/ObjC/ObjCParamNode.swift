@@ -16,9 +16,9 @@ struct ObjCParamNode: Node {
     var formalname: String
 }
 
-extension ObjCParamNode: CustomStringConvertible {
-    
-    var description: String {
-        return "\(name):(\(type))\(formalname)"
-    }
-}
+//extension ObjCParamNode: CustomStringConvertible {
+//    
+//    var description: String {
+//        return "\(name):(\(type))\(formalname)"
+//    }
+//}

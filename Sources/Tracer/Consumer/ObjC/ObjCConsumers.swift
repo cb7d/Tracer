@@ -52,29 +52,44 @@ var ObjCFuncParamListConsumer: TokenConsumer<[ObjCParamNode]> {
         <^> t_name <* t_colon => toString
         <*> ObjCFuncReturnsConsumer
         <*> t_name => toString
-    return consumer.many()
+    return consumer.manyLeast1()
+}
+
+var ObjCMethodSelector: TokenConsumer<[ObjCParamNode]> {
+    return ObjCFuncParamListConsumer <|> curry({ [ObjCParamNode(name: $0.detail, type: "", formalname: "")] }) <^> t_name
 }
 
 /// 单个方法定义解析
 var ObjCSingleFuncDeclConsumer: TokenConsumer<ObjCFuncNode> {
     
     /// 尝试无参函数解析
-    let consumer1 =  curry(ObjCFuncNode.init)
-        <^> ObjCFuncIsStaticConsumer
-        <*> ObjCFuncReturnsConsumer
-        <*> t_name <* t_semicolon => toString
-        <*> pure([])
-        <*> pure([])
+//    let consumer1 =  curry(ObjCFuncNode.init)
+//        <^> ObjCFuncIsStaticConsumer
+//        <*> ObjCFuncReturnsConsumer
+//        <*> t_name <* t_semicolon => toString
+//        <*> pure([])
+//        <*> pure([])
+//
+//    /// 尝试有参函数解析
+//    let consumer =  curry(ObjCFuncNode.init)
+//        <^> ObjCFuncIsStaticConsumer
+//        <*> ObjCFuncReturnsConsumer
+//        <*> pure("")
+//        <*> ObjCFuncParamListConsumer <* t_name.optional <* t_semicolon
+//        <*> pure([])
+//
+//    return (consumer1 <|> consumer)
     
-    /// 尝试有参函数解析
+    
+    
     let consumer =  curry(ObjCFuncNode.init)
         <^> ObjCFuncIsStaticConsumer
         <*> ObjCFuncReturnsConsumer
         <*> pure("")
-        <*> ObjCFuncParamListConsumer <* t_name.optional <* t_semicolon
+        <*> ObjCMethodSelector <* t_name.optional <* t_semicolon
         <*> pure([])
     
-    return (consumer1 <|> consumer)
+    return consumer
 }
 
 /// ObjC 方法定义
@@ -86,40 +101,111 @@ var ObjCFuncDeclConsumer: TokenConsumer<[ObjCFuncNode]> {
 /// ObjC 方法实现
 var ObjCFuncDefineConsumer: TokenConsumer<[ObjCFuncNode]> {
     
-    /// 尝试无参函数解析
-    let consumer1 =  curry(ObjCFuncNode.init)
-        <^> ObjCFuncIsStaticConsumer
-        <*> ObjCFuncReturnsConsumer
-        <*> t_name <* t_openBrace => toString
-        <*> pure([])
-        <*> ObjCInvokeConsumer
+    var body: TokenConsumer<[Token]> {
+        return anyTokens(inside: t_openBrace, rc: t_closeBrace)
+    }
     
-    /// 尝试有参函数解析
     let consumer =  curry(ObjCFuncNode.init)
         <^> ObjCFuncIsStaticConsumer
         <*> ObjCFuncReturnsConsumer
         <*> pure("")
-        <*> ObjCFuncParamListConsumer <* t_name.optional <* t_openBrace
-        <*> ObjCInvokeConsumer
+        <*> ObjCMethodSelector
+        <*> ({ ObjCInvokeConsumer.run($0) ?? [] } <^> body )
     
-    return (consumer1 <|> consumer).keepGoing
-}
-
-var ObjCInvokeConsumer: TokenConsumer<[ObjCInvokeNode]> {
-    
-    let consumer = ObjCInvokeNode.init <^> anyTokens(inside: t_openBracket, rc: t_closeBracket) => joinedBy(separator: " ")
     return consumer.keepGoing
 }
 
 
-/// ObjC 实现
-var ObjCImplementConsumer: TokenConsumer<[ObjCImplementNode]> {
+/// ObjC 方法调用
+var ObjCInvokeConsumer: TokenConsumer<[ObjCInvokeNode]> {
     
-    return (ObjCImplementNode.init
-        <^> t_implement
-        *> t_name
-        => toString).keepGoing
+    return ObjCMsgSendConsumer.keepGoing.map({ (invokes) -> [ObjCInvokeNode] in
+        var res = invokes
+        invokes.forEach{invoke in
+            res.append(contentsOf: invoke.params.reduce([]) { $0 + $1.invokes })
+        }
+        return res
+    });
+}
+
+/// 单条方法调用
+var ObjCMsgSendConsumer: TokenConsumer<ObjCInvokeNode> {
+    let msg = curry(ObjCInvokeNode.init)
+        <^> ObjCInvokerConsumer
+        <*> ObjCInvokeParamConsumer;
+    
+    return msg.between(left: t_openBracket, right: t_closeBracket)
 }
 
 
+/// ObjC 方法调用中的调用者
+var ObjCInvokerConsumer: TokenConsumer<ObjCInvoker> {
+//    return TokenConsumer<ObjCInvoker>(consume: { (tokens) -> ConsumeResult<(ObjCInvoker, [Token])> in
+//        return .failure(.notCase)
+//    })
+    
+    let toMethodInvoker:(ObjCInvokeNode) -> ObjCInvoker = { invoke in
+        .invokeNode(invoke)
+    }
+    
+    let toMethodVariable:(Token) -> ObjCInvoker = { token in
+        .variable(token.detail)
+    }
+    
+    return lazy(ObjCMsgSendConsumer) => toMethodInvoker
+        <|> t_name => toMethodVariable
+}
 
+/// ObjC 方法调用参数列表
+var ObjCInvokeParamConsumer: TokenConsumer<[ObjCInvokeParam]> {
+    
+    var paramBody: TokenConsumer<[ObjCInvokeNode]> {
+        return { lazy(ObjCMsgSendConsumer).keepGoing.run($0) ?? [] }
+            <^> anyOpenTokens(until: t_closeBracket <|> t_name *> t_colon)
+    }
+    
+    var param: TokenConsumer<ObjCInvokeParam> {
+        return curry(ObjCInvokeParam.init)
+            <^> (curry({ "\($0.detail)\($1.detail)" }) <^> t_name <*> t_colon )
+            <*> paramBody
+    }
+    
+    var paramList: TokenConsumer<[ObjCInvokeParam]> {
+        return param.manyLeast1()
+    }
+    
+    var paramSelector: TokenConsumer<[ObjCInvokeParam]> {
+        return paramList <|> {[ObjCInvokeParam(name: $0.detail, invokes: [])]} <^> t_name
+    }
+    
+    return paramSelector
+//    return TokenConsumer<[ObjCInvokeParam]>(consume: { (tokens) -> ConsumeResult<([ObjCInvokeParam], [Token])> in
+//        return .failure(.notCase)
+//    })
+}
+
+
+/// ObjC 实现
+//var ObjCImplementConsumer: TokenConsumer<[ObjCImplementNode]> {
+//
+//    return (ObjCImplementNode.init
+//        <^> t_implement
+//        *> t_name
+//        => toString).keepGoing
+//}
+
+
+
+// MARK: - Method
+
+//func toMethodInvoker() -> (ObjCInvokeNode) -> ObjCInvoker {
+//    return { invoke in
+//        .invokeNode(invoke)
+//    }
+//}
+//
+//func toMethodInvoker() -> (Token) -> ObjCInvoker {
+//    return { token in
+//        .variable(token.detail)
+//    }
+//}

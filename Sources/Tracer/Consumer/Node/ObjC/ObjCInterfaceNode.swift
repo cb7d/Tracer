@@ -19,17 +19,17 @@ struct ObjCInterfaceNode: Node {
     
     var protocols: [String] = []
     
-    var funcDecl: [ObjCFuncNode] = []
+    var funcDecls: [ObjCFuncNode] = []
 }
 
-extension ObjCInterfaceNode: CustomStringConvertible {
-    
-    var description: String {
-        return "@interface \(className)" + funcDecl.reduce("", {
-            return $0 + "\n" + $1.description
-        })
-    }
-}
+//extension ObjCInterfaceNode: CustomStringConvertible {
+//    
+//    var description: String {
+//        return "@interface \(className)" + funcDecl.reduce("", {
+//            return $0 + "\n" + $1.description
+//        })
+//    }
+//}
 
 
 

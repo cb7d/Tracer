@@ -12,10 +12,21 @@ import Foundation
 //    var otherInvoke: ObjCInvokeNode
 //}
 
+indirect enum ObjCInvoker: Node {
+    case variable(String)
+    case invokeNode(ObjCInvokeNode)
+}
+
+struct ObjCInvokeParam: Node {
+    var name: String
+    var invokes: [ObjCInvokeNode]
+}
+
 struct ObjCInvokeNode: Node {
-    //    var invoker = ""
-    //    var method = ""
-    var des = ""
+//    var des = ""
+//    var tokens: [String]
+    var invoker: ObjCInvoker
+    var params: [ObjCInvokeParam]
 }
 
 
@@ -33,21 +44,58 @@ struct ObjCFuncNode: Node {
     var invokes: [ObjCInvokeNode] = []
 }
 
-extension ObjCFuncNode: CustomStringConvertible {
+
+extension ObjCInvoker {
+    enum CodingKeys: String, CodingKey {
+        case key
+        case variable
+        case invoke
+    }
     
-    var description: String {
-        let type = funcIsStatic ? "+" : "-"
-        let name = (funcName.count > 0) ? funcName : (params.map{$0.description}.joined(separator: " "))
-        var str = "\(type) (\(returnType))\(name)"
-        if invokes.count == 0 {
-            return str
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case .variable(let name):
+            try container.encode("variable", forKey: .key)
+            try container.encode(name, forKey: .variable)
+        case .invokeNode(let node):
+            try container.encode("invoke", forKey: .key)
+            try container.encode(node, forKey: .invoke)
         }
-        str = str + invokes.reduce("{", {
-            $0 + "\n" + "   " + "[" + $1.des + "]"
-        })
-        return str + "}"
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let key = try container.decode(String.self, forKey: .key)
+        
+        switch key {
+        case "variable":
+            self = .variable(
+                try container.decode(String.self, forKey: .variable)
+            )
+        default:
+            self = .invokeNode(
+                try container.decode(ObjCInvokeNode.self, forKey: .invoke)
+            )
+        }
     }
 }
+
+//extension ObjCFuncNode: CustomStringConvertible {
+//    
+//    var description: String {
+//        let type = funcIsStatic ? "+" : "-"
+//        let name = (funcName.count > 0) ? funcName : (params.map{$0.description}.joined(separator: " "))
+//        var str = "\(type) (\(returnType))\(name)"
+//        if invokes.count == 0 {
+//            return str
+//        }
+//        str = str + invokes.reduce("{", {
+//            $0 + "\n" + "   " + "[" + $1.des + "]"
+//        })
+//        return str + "}"
+//    }
+//}
 
 // - (void)speak;
 // - (void)speak {}

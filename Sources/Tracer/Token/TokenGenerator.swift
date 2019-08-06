@@ -153,6 +153,8 @@ extension TokenGen {
                 if current.isLetter || current == "_" {
                     let v = variableName
                     switch variableName {
+                    case "super":
+                        return Token(type: .super, detail: "super")
                     case "static":
                         return Token(type: .static, detail: "static")
                     case "return":
