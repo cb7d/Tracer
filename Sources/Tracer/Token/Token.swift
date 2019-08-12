@@ -96,6 +96,6 @@ struct Token {
 extension Token: CustomStringConvertible {
     
     var description: String {
-        return "\(self.detail)"
+        return "\(detail)"
     }
 }

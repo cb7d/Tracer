@@ -27,51 +27,53 @@ class Tracer {
         let paths = filePath.files().filter{ $0.fileIsObjC() }.map{ $0.stringValue() }
         paths.forEach{ p in
             
-            semaphore.wait()
+            //            semaphore.wait()
+            //
+            //            DispatchQueue.global().async {
+            //
+            //
+            //
+            //                self.semaphore.signal()
+            //            }
             
-            DispatchQueue.global().async {
-                
-                let tokens = TokenGen(p).tokens()
-                
-                if let interfaces = ObjCInterfaceConsumer.run(tokens) {
-                    interfaces.forEach{
-                        classes.insert($0.className)
-//                        if let superClassName = $0.superClass {
-//                            classes.insert(superClassName)
-//                        }
-                    }
+            let tokens = TokenGen(p).tokens()
+            
+            if let interfaces = ObjCInterfaceConsumer.run(tokens) {
+                interfaces.forEach{
+                    classes.insert($0.className)
+                    //                        if let superClassName = $0.superClass {
+                    //                            classes.insert(superClassName)
+                    //                        }
                 }
+            }
+            
+            
+            
+            if let tks = ObjCFuncDefineConsumer.run(tokens) {
                 
                 
-                
-                if let tks = ObjCFuncDefineConsumer.run(tokens) {
-                    
-                    
-                    tks.forEach{funcNode in
-                        funcNode.invokes.forEach{invoke in
-                            
-                            var wait = true
-                            var invoker = invoke.invoker
-                            while wait {
-                                switch invoker {
-                                case .variable(let name):
-                                    invokers.insert(name)
-                                    wait = false
-                                case .invokeNode(let node):
-                                    invoker = node.invoker
-                                }
+                tks.forEach{funcNode in
+                    funcNode.invokes.forEach{invoke in
+                        
+                        var wait = true
+                        var invoker = invoke.invoker
+                        while wait {
+                            switch invoker {
+                            case .variable(let name):
+                                invokers.insert(name)
+                                wait = false
+                            case .invokeNode(let node):
+                                invoker = node.invoker
                             }
                         }
                     }
                 }
-                
-                self.semaphore.signal()
             }
             
             
         }
         
-        waitUntilFinished()
+        //        waitUntilFinished()
         
         let uselessClass = classes.filter{!invokers.contains($0)}
         print(uselessClass.sorted())

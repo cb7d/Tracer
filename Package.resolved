@@ -2,12 +2,30 @@
   "object": {
     "pins": [
       {
+        "package": "Commander",
+        "repositoryURL": "https://github.com/kylef/Commander",
+        "state": {
+          "branch": null,
+          "revision": "dc97e80a1cf5df6c5768528f039c65ad8c564712",
+          "version": "0.9.0"
+        }
+      },
+      {
         "package": "Curry",
         "repositoryURL": "https://github.com/thoughtbot/Curry",
         "state": {
           "branch": null,
           "revision": "4331dd50bc1db007db664a23f32e6f3df93d4e1a",
           "version": "4.0.2"
+        }
+      },
+      {
+        "package": "Spectre",
+        "repositoryURL": "https://github.com/kylef/Spectre.git",
+        "state": {
+          "branch": null,
+          "revision": "f14ff47f45642aa5703900980b014c2e9394b6e5",
+          "version": "0.9.0"
         }
       }
     ]

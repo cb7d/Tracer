@@ -110,7 +110,9 @@ var ObjCFuncDefineConsumer: TokenConsumer<[ObjCFuncNode]> {
         <*> ObjCFuncReturnsConsumer
         <*> pure("")
         <*> ObjCMethodSelector
-        <*> ({ ObjCInvokeConsumer.run($0) ?? [] } <^> body )
+        <*> ({
+            print("parse define with \($0)")
+            return ObjCInvokeConsumer.run($0) ?? [] } <^> body )
     
     return consumer.keepGoing
 }
@@ -186,13 +188,13 @@ var ObjCInvokeParamConsumer: TokenConsumer<[ObjCInvokeParam]> {
 
 
 /// ObjC 实现
-//var ObjCImplementConsumer: TokenConsumer<[ObjCImplementNode]> {
-//
-//    return (ObjCImplementNode.init
-//        <^> t_implement
-//        *> t_name
-//        => toString).keepGoing
-//}
+var ObjCImplementConsumer: TokenConsumer<[ObjCImplementNode]> {
+
+    return (ObjCImplementNode.init
+        <^> t_implement
+        *> t_name
+        => toString).keepGoing
+}
 
 
 
