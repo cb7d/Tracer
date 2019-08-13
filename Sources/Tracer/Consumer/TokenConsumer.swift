@@ -7,7 +7,7 @@
 
 import Foundation
 import Curry
-
+import LLexer
 
 
 /// 传入 Token 返回结果为 T 的消费者
@@ -55,21 +55,21 @@ var genericType: TokenConsumer<String?> {
 var toString: (Token?) -> String {
     return { token in
         guard let token = token else { return "" }
-        return token.detail
+        return token.text
     }
 }
 
 /// token转为字符串
 var filterNameToString: ([Token]) -> [String] {
     return { tokens in
-        return tokens.filter{return $0.type == .name}.map{return $0.detail}
+        return tokens.filter{return $0.type == .name}.map{return $0.text}
     }
 }
 
 /// 将token序列的字符拼接为字符串
 func joinedBy(separator: String) -> ([Token]) -> String {
     return { tokens in
-        return tokens.map { $0.detail } .joined(separator: separator)
+        return tokens.map { $0.text } .joined(separator: separator)
     }
 }
 

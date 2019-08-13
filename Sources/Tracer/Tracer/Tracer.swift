@@ -6,6 +6,8 @@
 //
 
 import Foundation
+import LLexer
+import Parser
 
 fileprivate let maxConcurrent: Int = 4
 
@@ -20,6 +22,8 @@ class Tracer {
     }
     
     func run() {
+        
+        
         
         var classes = Set<String>()
         var invokers = Set<String>()
@@ -36,7 +40,13 @@ class Tracer {
             //                self.semaphore.signal()
             //            }
             
-            let tokens = TokenGen(p).tokens()
+            
+            let tokens = LLexer(p).tokens
+            
+            let tks = tokenParser(.openBrace).repeats.run(tokens)
+            
+            
+            return
             
             if let interfaces = ObjCInterfaceConsumer.run(tokens) {
                 interfaces.forEach{

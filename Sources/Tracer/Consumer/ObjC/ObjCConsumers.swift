@@ -7,7 +7,7 @@
 
 import Foundation
 import Curry
-
+import LLexer
 
 
 /// ObjC 方法是否为类方法
@@ -56,7 +56,7 @@ var ObjCFuncParamListConsumer: TokenConsumer<[ObjCParamNode]> {
 }
 
 var ObjCMethodSelector: TokenConsumer<[ObjCParamNode]> {
-    return ObjCFuncParamListConsumer <|> curry({ [ObjCParamNode(name: $0.detail, type: "", formalname: "")] }) <^> t_name
+    return ObjCFuncParamListConsumer <|> curry({ [ObjCParamNode(name: $0.text, type: "", formalname: "")] }) <^> t_name
 }
 
 /// 单个方法定义解析
@@ -151,7 +151,7 @@ var ObjCInvokerConsumer: TokenConsumer<ObjCInvoker> {
     }
     
     let toMethodVariable:(Token) -> ObjCInvoker = { token in
-        .variable(token.detail)
+        .variable(token.text)
     }
     
     return lazy(ObjCMsgSendConsumer) => toMethodInvoker
@@ -168,7 +168,7 @@ var ObjCInvokeParamConsumer: TokenConsumer<[ObjCInvokeParam]> {
     
     var param: TokenConsumer<ObjCInvokeParam> {
         return curry(ObjCInvokeParam.init)
-            <^> (curry({ "\($0.detail)\($1.detail)" }) <^> t_name <*> t_colon )
+            <^> (curry({ "\($0.text)\($1.text)" }) <^> t_name <*> t_colon )
             <*> paramBody
     }
     
@@ -177,7 +177,7 @@ var ObjCInvokeParamConsumer: TokenConsumer<[ObjCInvokeParam]> {
     }
     
     var paramSelector: TokenConsumer<[ObjCInvokeParam]> {
-        return paramList <|> {[ObjCInvokeParam(name: $0.detail, invokes: [])]} <^> t_name
+        return paramList <|> {[ObjCInvokeParam(name: $0.text, invokes: [])]} <^> t_name
     }
     
     return paramSelector

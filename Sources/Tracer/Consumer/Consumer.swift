@@ -72,6 +72,8 @@ struct Consumer<Result, Input: Sequence> {
             return nil
         }
     }
+    
+    
 }
 
 extension Consumer {
