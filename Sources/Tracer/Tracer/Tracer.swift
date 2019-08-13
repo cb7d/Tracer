@@ -43,7 +43,7 @@ class Tracer {
             
             let tokens = LLexer(p).tokens
             
-            let tks = tokenParser(.openBrace).repeats.run(tokens)
+            let tks = parser_token(.openBrace).repeats.run(tokens)
             
             
             return
