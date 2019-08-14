@@ -25,8 +25,8 @@ class Tracer {
         
         
         
-        var classes = Set<String>()
-        var invokers = Set<String>()
+        //        var classes = Set<String>()
+        //        var invokers = Set<String>()
         
         let paths = filePath.files().filter{ $0.fileIsObjC() }.map{ $0.stringValue() }
         paths.forEach{ p in
@@ -43,50 +43,64 @@ class Tracer {
             
             let tokens = LLexer(p).tokens
             
-            let tks = parser_token(.openBrace).repeats.run(tokens)
+            if let nodes = parser_OCInterface.run(tokens) {
+                
+                print("Interfaces")
+                print(nodes)
+                
+            }
             
-            
-            return
-            
-            if let interfaces = ObjCInterfaceConsumer.run(tokens) {
-                interfaces.forEach{
-                    classes.insert($0.className)
-                    //                        if let superClassName = $0.superClass {
-                    //                            classes.insert(superClassName)
-                    //                        }
-                }
+            if let nodes = parser_OCImplement.run(tokens) {
+                
+                print("Implement")
+                print(nodes)
+                
             }
             
             
             
-            if let tks = ObjCFuncDefineConsumer.run(tokens) {
-                
-                
-                tks.forEach{funcNode in
-                    funcNode.invokes.forEach{invoke in
-                        
-                        var wait = true
-                        var invoker = invoke.invoker
-                        while wait {
-                            switch invoker {
-                            case .variable(let name):
-                                invokers.insert(name)
-                                wait = false
-                            case .invokeNode(let node):
-                                invoker = node.invoker
-                            }
-                        }
-                    }
-                }
-            }
+            
+            //            return
+            
+            //            if let interfaces = ObjCInterfaceConsumer.run(tokens) {
+            //                interfaces.forEach{
+            //                    classes.insert($0.className)
+            //                    //                        if let superClassName = $0.superClass {
+            //                    //                            classes.insert(superClassName)
+            //                    //                        }
+            //                }
+            //            }
+            
+            
+            
+            //            if let tks = ObjCFuncDefineConsumer.run(tokens) {
+            //
+            //
+            //                tks.forEach{funcNode in
+            //                    funcNode.invokes.forEach{invoke in
+            //
+            //                        var wait = true
+            //                        var invoker = invoke.invoker
+            //                        while wait {
+            //                            switch invoker {
+            //                            case .variable(let name):
+            //                                invokers.insert(name)
+            //                                wait = false
+            //                            case .invokeNode(let node):
+            //                                invoker = node.invoker
+            //                            }
+            //                        }
+            //                    }
+            //                }
+            //            }
             
             
         }
         
         //        waitUntilFinished()
         
-        let uselessClass = classes.filter{!invokers.contains($0)}
-        print(uselessClass.sorted())
+        //        let uselessClass = classes.filter{!invokers.contains($0)}
+        //        print(uselessClass.sorted())
         
         
     }
