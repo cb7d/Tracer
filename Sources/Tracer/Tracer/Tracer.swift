@@ -43,16 +43,23 @@ class Tracer {
             
             let tokens = LLexer(p).tokens
             
-            if let nodes = parser_OCInterface.run(tokens) {
-                
-                print("Interfaces")
-                print(nodes)
-                
-            }
+//            if let nodes = parser_OCInterface.run(tokens) {
+//
+//                print("Interfaces")
+//                print(nodes)
+//
+//            }
+//
+//            if let nodes = parser_OCImplement.run(tokens) {
+//
+//                print("Implement")
+//                print(nodes)
+//
+//            }
             
-            if let nodes = parser_OCImplement.run(tokens) {
+            if let nodes = parser_OCMethodDefine.repeats.run(tokens) {
                 
-                print("Implement")
+                print("Methods")
                 print(nodes)
                 
             }
