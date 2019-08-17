@@ -39,19 +39,23 @@ class Tracer {
             
             let tokens = LLexer(p).tokens
             
-//            if let ocimplements = parser_OCImplement.repeats.run(tokens) {
-//                ocimplements.forEach({ (impl) in
-//                    classes.append(impl.name)
-//                    impl.methods.forEach({ (method) in
-//                        method.invokes.forEach({(invoke) in
-//                            let invoker = invoke.invoker
-//                            invokers.append(getFinalInvoker(invoker))
-//                        })
-//                    })
-//                })
-//            }
-            if let interfaces = parser_OCInterface.run(tokens) {
-                
+            if let ocimplements = parser_OCImplement.repeats.run(tokens) {
+                ocimplements.forEach({ (impl) in
+                    classes.append(impl.name)
+                    impl.methods.forEach({ (method) in
+                        method.invokes.forEach({(invoke) in
+                            let invoker = invoke.invoker
+                            invokers.append(getFinalInvoker(invoker))
+                        })
+                    })
+                })
+            }
+            if let interfaces = parser_OCInterfaces.run(tokens) {
+                interfaces.forEach({ (interface) in
+                    interface.properties.forEach({ (property) in
+                        invokers.append(property.type)
+                    })
+                })
                 
             }
             
