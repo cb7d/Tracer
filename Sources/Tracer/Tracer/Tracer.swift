@@ -19,11 +19,13 @@ class Tracer {
     
     let filePath: Path
     
-    let resultType: TracerTypeOption
+    var resultType: TracerTypeOption = .unused
     
-    required init(_ path: String, type: TracerTypeOption) {
+    var ignorePrefix: String = ""
+    var ignoreSuffix: String = ""
+    
+    required init(_ path: String) {
         filePath = Path(path)
-        resultType = type
     }
     
     func allInvokes(_ invoke:ObjCInvoke) -> [ObjCInvoke] {
@@ -68,6 +70,8 @@ class Tracer {
         var ObjCImplements = [ObjCImplement]()
         var ObjCInterfaces = [ObjCInterface]()
         
+        
+        
         let paths = filePath.files().filter{ $0.fileIsObjC() }.map{ $0.stringValue() }
         paths.forEach{ p in
             
@@ -105,6 +109,7 @@ class Tracer {
         })
         
         interfaces.forEach({ (interface) in
+            invokers.append(interface.superClass)
             interface.properties.forEach({ (property) in
                 invokers.append(property.type)
             })
@@ -115,13 +120,22 @@ class Tracer {
         //        print(classes)
         //        print("============")
         
-        let noUseClasses = classes.filter{!invokers.contains($0)}.sorted()
-        //        .filter{!$0.hasSuffix("Cell")}
-        print("UnusedClasses =>")
+        var noUseClasses = classes.filter{!invokers.contains($0)}.sorted()
+        
+        if ignorePrefix.count > 0 {
+            let ignores = ignorePrefix.components(separatedBy: ",")
+            noUseClasses = noUseClasses.filter { c in ignores.filter{c.hasPrefix($0)}.count > 0 }
+        }
+        
+        if ignoreSuffix.count > 0 {
+            let ignores = ignoreSuffix.components(separatedBy: ",")
+            noUseClasses = noUseClasses.filter { c in ignores.filter{c.hasSuffix($0)}.count > 0 }
+        }
+        print("UnusedClasses => \n\n\n")
         print(noUseClasses)
         
         do {
-            try noUseClasses.joined(separator: "\n").write(toFile: "./Tracer_UnusedClasses.txt", atomically: true, encoding: .utf8)
+            try noUseClasses.joined(separator: "\n").write(toFile: "./TracerUnusedClasses\(path.standardizingPath().lastComponent()).txt", atomically: true, encoding: .utf8)
         }catch {
             print(error)
         }
