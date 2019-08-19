@@ -29,6 +29,24 @@
         }
       },
       {
+        "package": "LLexer",
+        "repositoryURL": "https://github.com/FelixScat/LLexer",
+        "state": {
+          "branch": null,
+          "revision": "6c9fa56373db6ffa2c49c6c3c304ad4eccc7b749",
+          "version": "0.0.1"
+        }
+      },
+      {
+        "package": "Parser",
+        "repositoryURL": "https://github.com/FelixScat/Parser",
+        "state": {
+          "branch": null,
+          "revision": "dc7f90cce2714b4f8d9edd22ad5338df37b39014",
+          "version": "0.0.1"
+        }
+      },
+      {
         "package": "Rainbow",
         "repositoryURL": "https://github.com/onevcat/Rainbow.git",
         "state": {
