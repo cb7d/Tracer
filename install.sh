@@ -1,6 +1,6 @@
 #! /bin/sh
 
-cd ~/
+cd /tmp
 git clone https://github.com/FelixScat/Tracer.git
 cd Tracer
 
@@ -13,5 +13,5 @@ fi
 
 cd .build/release
 cp -f Tracer /usr/local/bin/Tracer
-cd ~/
+cd /tmp
 rm -rf Tracer
