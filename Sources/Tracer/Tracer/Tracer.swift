@@ -124,18 +124,19 @@ class Tracer {
         
         if ignorePrefix.count > 0 {
             let ignores = ignorePrefix.components(separatedBy: ",")
-            noUseClasses = noUseClasses.filter { c in ignores.filter{c.hasPrefix($0)}.count > 0 }
+            noUseClasses = noUseClasses.filter { c in ignores.filter{c.hasPrefix($0)}.count == 0 }
         }
         
         if ignoreSuffix.count > 0 {
             let ignores = ignoreSuffix.components(separatedBy: ",")
-            noUseClasses = noUseClasses.filter { c in ignores.filter{c.hasSuffix($0)}.count > 0 }
+            noUseClasses = noUseClasses.filter { c in ignores.filter{c.hasSuffix($0)}.count == 0 }
         }
-        print("UnusedClasses => \n\n\n")
+        print("UnusedClasses => \n")
         print(noUseClasses)
+        print("\n")
         
         do {
-            try noUseClasses.joined(separator: "\n").write(toFile: "./TracerUnusedClasses\(path.standardizingPath().lastComponent()).txt", atomically: true, encoding: .utf8)
+            try noUseClasses.joined(separator: "\n").write(toFile: "./TracerUnusedClasses\(filePath.stringValue().standardizingPath().lastComponent()).txt", atomically: true, encoding: .utf8)
         }catch {
             print(error)
         }

@@ -4,8 +4,7 @@ import Foundation
 
 
 //let path = "/Users/felix/Documents/GitLab/TDFMallShop/TDFMallShop"
-let path = "/Users/felix/Documents/GitLab/TDFHomeModule/TDFHomeModule"
-
+//let path = "/Users/felix/Documents/GitLab/TDFHomeModule/TDFHomeModule"
 //let path = "/Users/felix/Documents/GitLab/TDFGroupSettingModule/TDFGroupSettingModule"
 
 let _ = command(
@@ -28,9 +27,16 @@ let _ = command(
     t.ignoreSuffix = ignoreSuffix
     
     
+    let dateFormatter = DateFormatter()
+    dateFormatter.dateStyle = .full
+    dateFormatter.timeStyle = .full
+    
     let begin = Date()
+    print("Start Tracer :: \(dateFormatter.string(from: begin))")
     t.run()
-    let end = Date.timeIntervalSince(begin)
-    print("Finished&TotalCost::\(String(describing: end))")
+    let end = Date()
+    print("Stop Tracer :: \(dateFormatter.string(from: end))")
+    let cost = end.timeIntervalSince(begin)
+    print("TotalCost :: \(String(describing: cost)) second")
     
 }.run()
