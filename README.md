@@ -503,3 +503,7 @@ extension Parser {
 #### 最后
 
 还有一些问题没有得到解决，关于反射的问题暂时无法处理，这些字符串有的是写在代码里面，有的是写在plist等文件里面的，有兴趣的同学欢迎提供思路
+
+https://www.jianshu.com/p/fa3568087881
+https://github.com/thoughtbot/Runes
+https://github.com/thoughtbot/curry
