@@ -144,5 +144,362 @@ swift package init --type executable
 1. 获取输入的Objective-C文件
 2. 将文件切割为Token
 3. 根据Token解析出所有Interface和implement
-4. 获取所有被使用的类，与全部的类做差集
+4. 获取所有被使用的类，与解析出全部的类做差集
 
+#### 定义Token
+
+```swift
+/// Token Type
+///
+/// - EOF: 文件结尾
+/// - unknown: 未知类型
+/// - name: 单词
+/// - plus: +
+/// - minus: -
+/// - asterisk: *
+/// - forwardSlash: /
+/// - backslash: \
+/// - at: @
+/// - atProtocol: @protocol
+/// - atInterface: @interface
+/// - atImplementation: @implementation
+/// - atProperty: @property
+/// - atEnd: @end
+/// - atImport: @import
+/// - atClass: @class
+/// - pound: #
+/// - poundImport: #import
+/// - dollar: $
+/// - openParen: (
+/// - closeParen: )
+/// - openBracket: [
+/// - closeBracket: ]
+/// - openBrace: {
+/// - closeBrace: }
+/// - less: <
+/// - greater: >
+/// - colon: :
+/// - comma: ,
+/// - semicolon: ;
+/// - equal: =
+/// - underline: _
+/// - doubleQuotation: "
+/// - caret: ^
+/// - dot: .
+/// - rightArrow: ->
+/// - `super`: super
+/// - `static`: static
+/// - `return`: return
+public enum TokenType {
+    case EOF
+    case unknown
+    case name
+    case plus
+    case minus
+    case asterisk
+    case forwardSlash
+    case backslash
+    case at
+    case atProtocol
+    case atInterface
+    case atImplementation
+    case atProperty
+    case atEnd
+    case atImport
+    case atClass
+    case pound
+    case poundImport
+    case dollar
+    case openParen
+    case closeParen
+    case openBracket
+    case closeBracket
+    case openBrace
+    case closeBrace
+    case less
+    case greater
+    case colon
+    case comma
+    case semicolon
+    case equal
+    case underline
+    case doubleQuotation
+    case caret
+    case dot
+    case rightArrow
+    case `super`
+    case `static`
+    case `return`
+}
+
+public struct Token {
+    public let type: TokenType
+    public let text: String
+}
+```
+
+定义好对应的Token后，就可以开始取词器的编写了
+
+```swift
+public class LLexer {
+    
+    fileprivate let filePath: String
+    fileprivate let fileSource: String
+    
+    fileprivate var curIdx: String.Index
+    
+    public init(_ file: String) {
+        filePath = file
+        
+        do {
+            fileSource = try String(contentsOfFile: file, encoding: .utf8).rmComments
+        } catch {
+            fileSource = ""
+        }
+        curIdx = fileSource.startIndex
+    }
+}
+```
+
+我们使用的分析器是使用的是 LL(1)，也就是最做推导，自顶向下
+
+在初始化一个lexer的时候，会传入文件的路径，通过 String(contentsOfFile) 的方法解析出全部的Token
+
+#### 定义Parser
+
+一个最简单的Parser只需要解析出某个指定的Token，为了通用，可以定义出一下的Parser
+
+```swift
+/// Parser
+public struct Parser<Output, Input: Sequence> {
+    
+    public var parse: (Input) -> Result<(Output, Input), Error>
+    
+    public func run(_ input: Input) -> Output? {
+        switch parse(input) {
+        case .success(let (output, _)):
+            #if DEBUG
+            print("Parse Success: \(output)")
+            #endif
+            return output
+        case .failure(let error):
+            #if DEBUG
+            print("Parse Failed: \(error)")
+            #endif
+            return nil
+        }
+    }
+}
+```
+
+对于每一个Parser，执行 parse 后会返回一个result，parse失败会返回 error，成功后会返回对应的值和剩余的序列
+
+最终我们的目标是解析出 interface 和 implement ，所以接下来先定义好对应的数据结构
+
+```swift
+/// ObjC 成员属性
+public struct ObjCProperty {
+    /// 修饰符
+    public var decorate: String
+    /// 类型
+    public var type: String
+    /// 属性名称
+    public var propertyName: String
+}
+
+/// ObjC 接口
+public struct ObjCInterface {
+    public var name: String
+    public var superClass: String
+    public var properties: [ObjCProperty] = []
+}
+
+/// ObjC 实现
+public struct ObjCImplement {
+    public var name = ""
+    public var methods: [ObjCMethod] = []
+}
+
+/// ObjC 方法
+public struct ObjCMethod {
+    /// 是否为静态方法
+    public var statically = false
+    /// 返回类型
+    public var returnType = ""
+    /// 参数列表
+    public var params: [ObjCParam] = []
+    /// 方法体中的方法调用
+    public var invokes: [ObjCInvoke] = []
+}
+
+/// ObjC 方法参数
+public struct ObjCParam {
+    /// 参数名
+    public var name: String
+    /// 参数类型
+    public var type: String
+    /// 形参名
+    public var formalName: String
+}
+
+/// 方法调用者
+public indirect enum ObjCInvoker {
+    case variable(String)
+    case otherInvoke(ObjCInvoke)
+}
+
+/// 方法调用的参数
+public struct ObjCInvokeParam {
+    /// 参数名
+    public var name: String
+    /// 参数中的其他方法调用
+    public var invokes: [ObjCInvoke]
+}
+
+/// 方法调用
+public struct ObjCInvoke {
+    public var invoker: ObjCInvoker
+    public var params: [ObjCInvokeParam]
+}
+
+```
+
+接下来先使用别名来定义用来解析Token的Parser
+
+```swift
+public typealias TokenParser<T> = Parser<T, [Token]>
+```
+
+定义一个方法用来返回解析单个Token的Parser
+
+```swift
+public func parser_token(_ type: TokenType) -> TokenParser<Token> {
+    return TokenParser(parse: { (tks) -> Result<(Token, [Token]), Error> in
+        guard let token = tks.first, token.type == type else {
+            return .failure(ParseError.notMatch)
+        }
+        return .success((token, Array(tks.dropFirst())))
+    })
+}
+```
+
+写完了单个Token的解析以后我们需要的就是组合不同的Parser用来构建出最终的结果了，
+
+#### 组合
+
+在有了基本的解析器后我们就只需要考虑组合的问题了
+
+以interface的Parser为例，要解析出一个Interface，首先我们肯定会遇到的第一个Token一定是 @interface，最后是@end符号，@interface 后面紧跟着的就是接口的类名，接下来如果有继承的话会在 `:`后面跟着父类的类名，中间会包含成员属性的定义和方法的定义，这里面我们不关心方法的定义，只关注 类，父类和成员属性
+
+接下来我们要借助于柯里化的方法以及添加一些自定义的中缀运算符来构建InterfaceParser
+
+```swift
+/// parser for ObjCInterface
+public var parser_OCInterface: TokenParser<ObjCInterface> {
+    
+    return curry(ObjCInterface.init)
+        <^> p_ocinterface *> p_name => string
+        <*> p_colon *> p_name  => string
+        <*> tokens(until: p_ocEnd).map{
+            parser_OCProperty.repeats.run($0) ?? []
+    }
+}
+```
+
+其中，p_ocinterface，p_name，p_colon 为基于单个Token的Parser 
+
+```swift
+/// @interface
+var p_ocinterface: TokenParser<Token> {
+    return parser_token(.atInterface)
+}
+
+/// *
+var p_name: TokenParser<Token> {
+    return parser_token(.name)
+}
+
+/// :
+var p_colon: TokenParser<Token> {
+    return parser_token(.colon)
+}
+```
+
+其中 **curry(ObjCInterface.init)** 是对 ObjCInterface 的初始化方法进行柯里化，方便我们将Parser组合应用于初始化 ObjCInterface，下面的运算符定义是这样的
+
+```swift
+/// Map
+func <^> <T, U, S> (f: @escaping (T) -> U, c: Parser<T, S>) -> Parser<U, S> {
+    return c.map(f)
+}
+
+/// apply
+func <*> <T, U, S> (l: Parser<(T) -> U, S>, r: Parser<T, S>) -> Parser<U, S> {
+    return r.apply(l)
+}
+
+func => <T, U> (p: Parser<T, [Token]>, f: @escaping (T) -> U) -> Parser<U, [Token]> {
+    return p.map(f)
+}
+
+extension Parser {
+    
+    func map<U>(_ f: @escaping (Output) -> U) -> Parser<U, Input> {
+        return Parser<U, Input>(parse: { (input) -> Result<(U, Input), Error> in
+            switch self.parse(input) {
+            case .success(let (result, rest)):
+                return .success((f(result), rest))
+            case .failure(let error):
+                return .failure(error)
+            }
+        })
+    }
+    
+    func apply<U>(_ parser: Parser<(Output) -> U, Input>) -> Parser<U, Input> {
+        return Parser<U, Input>(parse: { (input) -> Result<(U, Input), Error> in
+            let lResult = parser.parse(input)
+            guard let l = lResult.value else {
+                return .failure(lResult.error ?? ParseError.unknow)
+            }
+            let rResult = self.parse(l.1)
+            guard let r = rResult.value else {
+                return .failure(rResult.error ?? ParseError.unknow)
+            }
+            return .success((l.0(r.0), r.1))
+        })
+    }
+    
+    func or(_ parser: Parser<Output, Input>) -> Parser<Output, Input> {
+        return Parser<Output, Input>(parse: { (input) -> Result<(Output, Input), Error> in
+            let result = self.parse(input)
+            switch result {
+            case .success(_):
+                return result
+            case .failure(_):
+                return parser.parse(input)
+            }
+        })
+    }
+    
+    func rightSequence<U>(_ parser: Parser<U, Input> ) -> Parser<U, Input> {
+        return Parser<U, Input>(parse: { (input) -> Result<(U, Input), Error> in
+            let lResult = self.parse(input)
+            guard let l = lResult.value else {
+                return .failure(lResult.error ?? ParseError.unknow)
+            }
+            let rResult = parser.parse(l.1)
+            guard let r = rResult.value else {
+                return .failure(rResult.error ?? ParseError.unknow)
+            }
+            return .success(r)
+        })
+    }
+}
+
+```
+
+最终，将能够解析符合规则的一些的Interface，同理，我们也对 implement 进行一些组合，在对目标文件夹进行解析，就可以拿到所有的 invoker 。
+
+#### 最后
+
+还有一些问题没有得到解决，关于反射的问题暂时无法处理，这些字符串有的是写在代码里面，有的是写在plist等文件里面的，有兴趣的同学欢迎提供思路
