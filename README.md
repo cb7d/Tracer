@@ -506,6 +506,6 @@ extension Parser {
 
 参考链接
 
-https://www.jianshu.com/p/fa3568087881
-https://github.com/thoughtbot/Runes
-https://github.com/thoughtbot/curry
+[https://www.jianshu.com/p/fa3568087881](https://www.jianshu.com/p/fa3568087881)
+[https://github.com/thoughtbot/Runes](https://github.com/thoughtbot/Runes)
+[https://github.com/thoughtbot/curry](https://github.com/thoughtbot/curry)
