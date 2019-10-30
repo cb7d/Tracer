@@ -73,7 +73,7 @@ fui 的检测方式是由源代码扫描出 import 的类，和工程中所有�
     return self;
 }
 - (void)someInstanceMethod {
- 		 [self dosomething];
+    [self dosomething];
 }
 + (void)someClassMethod {
   
@@ -509,3 +509,4 @@ extension Parser {
 [https://www.jianshu.com/p/fa3568087881](https://www.jianshu.com/p/fa3568087881)
 [https://github.com/thoughtbot/Runes](https://github.com/thoughtbot/Runes)
 [https://github.com/thoughtbot/curry](https://github.com/thoughtbot/curry)
+[https://github.com/L-Zephyr/Drafter](https://github.com/L-Zephyr/Drafter)
